@@ -62,17 +62,6 @@
             pointer-events: auto;
         }
 
-        /* Неоновый текст */
-        .neon-title {
-            font-size: 2.5rem;
-            text-transform: uppercase;
-            text-align: center;
-            margin-bottom: 40px;
-            color: #fff;
-            text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue), 0 0 40px var(--neon-purple);
-            letter-spacing: 2px;
-        }
-
         /* Кнопки */
         .btn {
             background: transparent;
@@ -157,6 +146,7 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             text-align: center;
+            margin-bottom: 40px;
         }
 
         /* КРУГОВОЕ МЕНЮ */
@@ -222,10 +212,6 @@
             color: #fff;
             box-shadow: 0 0 10px rgba(255, 102, 0, 0.3);
         }
-        .radial-menu.submenu .menu-item:active {
-            background: var(--neon-orange);
-            box-shadow: var(--shadow-orange);
-        }
 
         /* Экран результатов */
         .result-card {
@@ -257,50 +243,41 @@
 </head>
 <body>
 
-    <!-- 1. СТАРТОВЫЙ ЭКРАН -->
-    <div id="start-screen" class="screen active">
-        <h1 class="neon-title">Radial Menu<br>Trainer</h1>
-        <button class="btn" onclick="changeScreen('game-screen')">Играть</button>
-    </div>
-
-    <!-- 2. ИГРОВОЙ ЭКРАН -->
-    <div id="game-screen" class="screen">
+    <!-- 1. ИГРОВОЙ ЭКРАН (Теперь активен сразу) -->
+    <div id="game-screen" class="screen active">
         <div id="timer">0.000 сек</div>
 
         <div class="game-zone">
             <!-- Карточка игрока -->
             <div id="player-card" class="player-card">
                 <i class="fa-solid fa-user-shield"></i>
-                <span>Yamato_Sekade<br>[279]</span>
+                <span>Yamato_Sekade</span>
             </div>
 
             <!-- Круговое меню -->
             <div id="radial-menu" class="radial-menu">
-                <!-- Сюда JS будет вставлять кнопки -->
+                <!-- Сюда JS вставляет кнопки -->
             </div>
         </div>
 
-        <div id="hint" class="hint-text">Сделай двойной клик по игроку</div>
+        <div id="hint" class="hint-text">Сделай быстрый двойной тап по игроку</div>
     </div>
 
-    <!-- 3. ЭКРАН РЕЗУЛЬТАТОВ -->
+    <!-- 2. ЭКРАН РЕЗУЛЬТАТОВ -->
     <div id="result-screen" class="screen">
         <div class="result-card">
             <h2>Результат</h2>
             <div id="final-time" class="result-time">0 мс</div>
             <div id="rank" class="result-rank">-</div>
-            <button class="btn" onclick="restartGame()">Повторить</button>
+            <button id="restart-btn" class="btn">Повторить</button>
         </div>
     </div>
 
     <script>
-        // Игровое состояние
         let startTime = 0;
         let timerInterval = null;
         let isGameRunning = false;
-        let currentStage = 1; // 1 - главное меню, 2 - подменю
 
-        const startScreen = document.getElementById('start-screen');
         const gameScreen = document.getElementById('game-screen');
         const resultScreen = document.getElementById('result-screen');
         const playerCard = document.getElementById('player-card');
@@ -308,13 +285,38 @@
         const timerDisplay = document.getElementById('timer');
         const hintDisplay = document.getElementById('hint');
 
+        // Вешаем обработчик на кнопку "Повторить" через pointerdown для мгновенного отклика
+        window.addEventListener('DOMContentLoaded', () => {
+            const restartBtn = document.getElementById('restart-btn');
+            if (restartBtn) {
+                restartBtn.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    restartGame();
+                });
+            }
+        });
+
         // Переключение экранов
         function changeScreen(screenId) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
         }
 
-        // Обработка Двойного тапа (Fast Double Tap) на мобильных
+        // Обработка быстрого двойного тапа / клика по карточке
         let lastTap = 0;
-        playerCard.addEventListener('touchend', function (e) {
-      <div>Надеть наручники</div></div> <div class="menu-item sub-action"><div>Снять наручники</div></div> <div class="menu-item sub-action"><div>Вести за собой</div></div> <div class="menu-item sub-action"><div>Проверить док-ты</div></div>;// Финал спидрана при клике на любое действиеdocument.querySelectorAll('.sub-action').forEach(item => {item.addEventListener('click', (e) => {e.stopPropagation();finishSpeedrun();});});}// Финишfunction finishSpeedrun() {clearInterval(timerInterval);const endTime = performance.now();const totalTimeMs = Math.round(endTime - startTime);// Скрываем менюradialMenu.classList.remove('open');isGameRunning = false;// Расчет рейтингаlet rank = "";if (totalTimeMs <= 300) {rank = "⚡ Молниеносный коп";} else if (totalTimeMs <= 500) {rank = "⭐ Хорошая реакция";} else {rank = "🐢 Медленный шериф";}// Вывод результатовdocument.getElementById('final-time').textContent = ${totalTimeMs} мс;document.getElementById('rank').textContent = rank;setTimeout(() => {changeScreen('result-screen');}, 150);}// Сброс и повторfunction restartGame() {timerDisplay.textContent = '0.000 сек';hintDisplay.textContent = 'Сделай двойной клик по игроку';playerCard.style.pointerEvents = 'auto';radialMenu.innerHTML = '';changeScreen('game-screen');}
+        function handleStartTrigger(e) {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 250 && tapLength > 0) {
+                if (e) e.preventDefault();
+                tryStartSpeedrun();
+            }
+            lastTap = currentTime;
+        }
+
+        playerCard.addEventListener('pointerdown', handleStartTrigger);
+
+        // Запуск спидрана
+        function tryStartSpeedrun() {
+            if (isGameRunning) return;
+            
