@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Radial Menu Speedrun Trainer</title>
+    <!-- Подключение FontAwesome для иконок -->
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <style>
+        :root {
+            --bg-color: #0d0e12;
+            --card-bg: #161920;
+            --neon-orange: #ff6600;
+            --neon-blue: #00f0ff;
+            --neon-purple: #9d00ff;
+            --text-color: #ffffff;
+            --shadow-orange: 0 0 15px rgba(255, 102, 0, 0.6), 0 0 30px rgba(255, 102, 0, 0.3);
+            --shadow-blue: 0 0 15px rgba(0, 240, 255, 0.6), 0 0 30px rgba(0, 240, 255, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation; /* Отключает double-tap-to-zoom */
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Экраны */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .screen.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Неоновый текст */
+        .neon-title {
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 40px;
+            color: #fff;
+            text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue), 0 0 40px var(--neon-purple);
+            letter-spacing: 2px;
+        }
+
+        /* Кнопки */
+        .btn {
+            background: transparent;
+            color: #fff;
+            border: 2px solid var(--neon-orange);
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: var(--shadow-orange);
+            transition: all 0.2s ease;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            background: var(--neon-orange);
+            box-shadow: 0 0 25px var(--neon-orange);
+        }
+
+        /* Игровой экран */
+        #timer {
+            font-size: 2.2rem;
+            font-family: monospace;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px rgba(0,240,255,0.5);
+            margin-bottom: auto;
+            margin-top: 40px;
+            font-weight: bold;
+        }
+
+        /* Контейнер для карточки и меню */
+        .game-zone {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: auto;
+        }
+
+        /* Карточка игрока */
+        .player-card {
+            width: 150px;
+            height: 150px;
+            background: var(--card-bg);
+            border: 2px solid var(--neon-blue);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 15px;
+            box-shadow: var(--shadow-blue);
+            z-index: 10;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+
+        .player-card:active {
+            transform: scale(0.95);
+        }
+
+        .player-card i {
+            font-size: 2.5rem;
+            color: var(--neon-blue);
+            margin-bottom: 8px;
+        }
+
+        .player-card span {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .hint-text {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        /* КРУГОВОЕ МЕНЮ */
+        .radial-menu {
+            position: absolute;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: scale(0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease;
+        }
+
+        .radial-menu.open {
+            transform: scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Кнопки секторов */
+        .menu-item {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: #1a1d24;
+            border: 2px solid #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #bbb;
+            text-align: center;
+            padding: 5px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+
+        /* Расположение по кругу (4 элемента) */
+        .menu-item:nth-child(1) { top: 0; left: 115px; }    /* Верх */
+        .menu-item:nth-child(2) { top: 115px; right: 0; }   /* Право */
+        .menu-item:nth-child(3) { bottom: 0; left: 115px; } /* Низ */
+        .menu-item:nth-child(4) { top: 115px; left: 0; }    /* Лево */
+
+        /* Активная цель (Фракция) на Этапе 1 */
+        .menu-item.target-faction {
+            border-color: var(--neon-orange);
+            color: #fff;
+            box-shadow: var(--shadow-orange);
+            background: rgba(255, 102, 0, 0.1);
+        }
+
+        /* Элементы подменю на Этапе 2 */
+        .radial-menu.submenu .menu-item {
+            border-color: var(--neon-orange);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(255, 102, 0, 0.3);
+        }
+        .radial-menu.submenu .menu-item:active {
+            background: var(--neon-orange);
+            box-shadow: var(--shadow-orange);
+        }
+
+        /* Экран результатов */
+        .result-card {
+            background: var(--card-bg);
+            border: 2px solid var(--neon-purple);
+            box-shadow: 0 0 20px rgba(157, 0, 255, 0.4);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            max-width: 340px;
+            width: 100%;
+        }
+
+        .result-time {
+            font-size: 2.5rem;
+            color: var(--neon-orange);
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 0 0 10px rgba(255,102,0,0.4);
+        }
+
+        .result-rank {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: var(--neon-blue);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. СТАРТОВЫЙ ЭКРАН -->
+    <div id="start-screen" class="screen active">
+        <h1 class="neon-title">Radial Menu<br>Trainer</h1>
+        <button class="btn" onclick="changeScreen('game-screen')">Играть</button>
+    </div>
+
+    <!-- 2. ИГРОВОЙ ЭКРАН -->
+    <div id="game-screen" class="screen">
+        <div id="timer">0.000 сек</div>
+
+        <div class="game-zone">
+            <!-- Карточка игрока -->
+            <div id="player-card" class="player-card">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>Yamato_Sekade<br>[279]</span>
+            </div>
+
+            <!-- Круговое меню -->
+            <div id="radial-menu" class="radial-menu">
+                <!-- Сюда JS будет вставлять кнопки -->
+            </div>
+        </div>
+
+        <div id="hint" class="hint-text">Сделай двойной клик по игроку</div>
+    </div>
+
+    <!-- 3. ЭКРАН РЕЗУЛЬТАТОВ -->
+    <div id="result-screen" class="screen">
+        <div class="result-card">
+            <h2>Результат</h2>
+            <div id="final-time" class="result-time">0 мс</div>
+            <div id="rank" class="result-rank">-</div>
+            <button class="btn" onclick="restartGame()">Повторить</button>
+        </div>
+    </div>
+
+    <script>
+        // Игровое состояние
+        let startTime = 0;
+        let timerInterval = null;
+        let isGameRunning = false;
+        let currentStage = 1; // 1 - главное меню, 2 - подменю
+
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const playerCard = document.getElementById('player-card');
+        const radialMenu = document.getElementById('radial-menu');
+        const timerDisplay = document.getElementById('timer');
+        const hintDisplay = document.getElementById('hint');
+
+        // Переключение экранов
+        function changeScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // Обработка Двойного тапа (Fast Double Tap) на мобильных
+        let lastTap = 0;
+        playerCard.addEventListener('touchend', function (e) {
+      <div>Надеть наручники</div></div> <div class="menu-item sub-action"><div>Снять наручники</div></div> <div class="menu-item sub-action"><div>Вести за собой</div></div> <div class="menu-item sub-action"><div>Проверить док-ты</div></div>;// Финал спидрана при клике на любое действиеdocument.querySelectorAll('.sub-action').forEach(item => {item.addEventListener('click', (e) => {e.stopPropagation();finishSpeedrun();});});}// Финишfunction finishSpeedrun() {clearInterval(timerInterval);const endTime = performance.now();const totalTimeMs = Math.round(endTime - startTime);// Скрываем менюradialMenu.classList.remove('open');isGameRunning = false;// Расчет рейтингаlet rank = "";if (totalTimeMs <= 300) {rank = "⚡ Молниеносный коп";} else if (totalTimeMs <= 500) {rank = "⭐ Хорошая реакция";} else {rank = "🐢 Медленный шериф";}// Вывод результатовdocument.getElementById('final-time').textContent = ${totalTimeMs} мс;document.getElementById('rank').textContent = rank;setTimeout(() => {changeScreen('result-screen');}, 150);}// Сброс и повторfunction restartGame() {timerDisplay.textContent = '0.000 сек';hintDisplay.textContent = 'Сделай двойной клик по игроку';playerCard.style.pointerEvents = 'auto';radialMenu.innerHTML = '';changeScreen('game-screen');}
