@@ -319,4 +319,4 @@
         // Запуск спидрана
         function tryStartSpeedrun() {
             if (isGameRunning) return;
-            
+            item.addEventListener('pointerdown', (e) => {e.preventDefault();e.stopPropagation();finishSpeedrun();});});}// Финишfunction finishSpeedrun() {clearInterval(timerInterval);const endTime = performance.now();const totalTimeMs = Math.round(endTime - startTime);radialMenu.classList.remove('open');isGameRunning = false;// Рейтингlet rank = "";if (totalTimeMs <= 300) rank = "⚡ Молниеносный коп";else if (totalTimeMs <= 500) rank = "⭐ Хорошая реакция";else rank = "🐢 Медленный шериф";document.getElementById('final-time').textContent = ${totalTimeMs} мс;document.getElementById('rank').textContent = rank;setTimeout(() => {changeScreen('result-screen');}, 150);}// Сброс и повторfunction restartGame() {timerDisplay.textContent = '0.000 сек';hintDisplay.textContent = 'Сделай быстрый двойной тап по игроку';playerCard.style.pointerEvents = 'auto';radialMenu.innerHTML = '';changeScreen('game-screen');}
