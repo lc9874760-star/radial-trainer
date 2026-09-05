@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Amazing Online - МВД Спидран Тренер</title>
+    <title>Amazing Online - МВД Тренер</title>
     <link rel="stylesheet" href="https://cloudflare.com">
     <style>
         :root {
@@ -23,7 +23,7 @@
             padding: 0;
             user-select: none;
             -webkit-user-select: none;
-            touch-action: manipulation;
+            /* touch-action: manipulation убрана, чтобы браузеры Redmi не путались */
         }
 
         body {
@@ -60,7 +60,6 @@
             pointer-events: auto;
         }
 
-        /* Таймер сверху */
         #timer {
             font-size: 2.5rem;
             font-family: monospace;
@@ -71,7 +70,6 @@
             font-weight: bold;
         }
 
-        /* Игровая зона */
         .game-zone {
             position: relative;
             width: 100%;
@@ -82,7 +80,7 @@
             margin-bottom: auto;
         }
 
-        /* Карточка персонажа */
+        /* Кнопка-кружок игрока */
         .player-card {
             width: 140px;
             height: 140px;
@@ -98,6 +96,11 @@
             box-shadow: var(--shadow-blue);
             z-index: 10;
             cursor: pointer;
+            -webkit-tap-highlight-color: transparent; /* Убирает синюю вспышку на Redmi */
+        }
+
+        .player-card i, .player-card span {
+            pointer-events: none; /* Чтобы клик не падал на иконку внутри круга */
         }
 
         .player-card i {
@@ -143,7 +146,6 @@
             pointer-events: auto;
         }
 
-        /* Сектора меню */
         .menu-item {
             position: absolute;
             width: 95px;
@@ -161,15 +163,14 @@
             padding: 5px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Позиции по кругу */
-        .menu-item:nth-child(1) { top: 0; left: 112px; }    /* Верх */
-        .menu-item:nth-child(2) { top: 112px; right: 0; }   /* Право */
-        .menu-item:nth-child(3) { bottom: 0; left: 112px; } /* Низ */
-        .menu-item:nth-child(4) { top: 112px; left: 0; }    /* Лево */
+        .menu-item:nth-child(1) { top: 0; left: 112px; }    
+        .menu-item:nth-child(2) { top: 112px; right: 0; }   
+        .menu-item:nth-child(3) { bottom: 0; left: 112px; } 
+        .menu-item:nth-child(4) { top: 112px; left: 0; }    
 
-        /* Фракция (активная цель) */
         .menu-item.target-faction {
             border-color: var(--neon-orange);
             color: #fff;
@@ -177,7 +178,6 @@
             background: rgba(255, 102, 0, 0.15);
         }
 
-        /* Подменю фракции */
         .radial-menu.submenu .menu-item.target-action {
             border-color: #ff3333;
             color: #fff;
@@ -185,7 +185,6 @@
             background: rgba(255, 51, 51, 0.15);
         }
 
-        /* Модалка результатов */
         .result-card {
             background: var(--card-bg);
             border: 2px solid var(--neon-purple);
@@ -223,27 +222,28 @@
             border-radius: 25px;
             cursor: pointer;
             box-shadow: var(--shadow-orange);
+            -webkit-tap-highlight-color: transparent;
         }
     </style>
 </head>
 <body>
 
-    <!-- ИГРОВОЙ ЭКРАН (ОТКРЫТ СРАЗУ) -->
+    <!-- ИГРОВОЙ ЭКРАН -->
     <div id="game-screen" class="screen active">
         <div id="timer">0.000 сек</div>
 
         <div class="game-zone">
-            <!-- Карточка игрока -->
+            <!-- Центральный кружок -->
             <div id="player-card" class="player-card">
                 <i class="fa-solid fa-user-shield"></i>
-                <span>Yamato_Sekade<br>[279]</span>
+                <span>Yamato_Sekade</span>
             </div>
 
             <!-- Круговое меню -->
             <div id="radial-menu" class="radial-menu"></div>
         </div>
 
-        <div id="hint" class="hint-text">Нажми на игрока, чтобы начать!</div>
+        <div id="hint" class="hint-text">Нажми на кружок, чтобы начать!</div>
     </div>
 
     <!-- ЭКРАН РЕЗУЛЬТАТОВ -->
@@ -267,23 +267,20 @@
         const hintDisplay = document.getElementById('hint');
         const restartBtn = document.getElementById('restart-btn');
 
-        // ОДИН ТАП/КЛИК по игроку — СРАЗУ СТАРТ
-        playerCard.addEventListener('pointerdown', (e) => {
-            e.preventDefault();
+        // ОБЫЧНЫЙ КЛИК (работает везде на Redmi, Firefox и Chrome)
+        playerCard.addEventListener('click', () => {
             if (isGameRunning) return;
 
             isGameRunning = true;
-            playerCard.style.pointerEvents = 'none'; // Блокируем карту, чтобы не мешала тапать меню
+            playerCard.style.visibility = 'hidden'; // Скрываем кружок, чтобы он не перекрывал меню
             hintDisplay.textContent = "БЫСТРО ЖМИ «ФРАКЦИЯ»!";
 
-            // Старт таймера
             startTime = performance.now();
             timerInterval = setInterval(() => {
                 const elapsed = performance.now() - startTime;
                 timerDisplay.textContent = (elapsed / 1000).toFixed(3) + ' сек';
             }, 10);
 
-            // Показываем Главное меню
             renderMainMenu();
         });
 
@@ -297,10 +294,7 @@
             `;
             radialMenu.className = "radial-menu open";
 
-            // Тап по кнопке Фракция
-            document.getElementById('faction-btn').addEventListener('pointerdown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
+            document.getElementById('faction-btn').addEventListener('click', (e) => {
                 goToSubmenu();
             });
         }
@@ -315,4 +309,7 @@
                 <div class="menu-item">Документы</div>
                 <div class="menu-item">Вести за собой</div>
                 <div class="menu-item target-action" id="arrest-btn">Задержать</div>
-        `;// Тап по кнопке "Задержать" останавливает таймер!document.getElementById('arrest-btn').addEventListener('pointerdown', (e) => {e.preventDefault();e.stopPropagation();finishSpeedrun();});}// Финал и вывод миллисекундfunction finishSpeedrun() {clearInterval(timerInterval);const totalTimeMs = Math.round(performance.now() - startTime);radialMenu.className = "radial-menu"; // закрываем менюisGameRunning = false;// Ранги скорости под Amazing Onlinelet rank = "";if (totalTimeMs <= 280) rank = "⚡ Молниеносный нонРП коп";else if (totalTimeMs <= 450) rank = "⭐ Отличный биндер / Хорошая реакция";else rank = "🐢 Медленный шериф";document.getElementById('final-time').textContent = ${totalTimeMs} мс;document.getElementById('rank').textContent = rank;setTimeout(() => {document.getElementById('game-screen').classList.remove('active');document.getElementById('result-screen').classList.add('active');}, 200);}// Кнопка повтораrestartBtn.addEventListener('pointerdown', (e) => {e.preventDefault();timerDisplay.textContent = '0.000 сек';hintDisplay.textContent = 'Нажми на игрока, чтобы начать!';playerCard.style.pointerEvents = 'auto';radialMenu.innerHTML = '';document.getElementById('result-screen').classList.remove('active');document.getElementById('game-screen').classList.add('active');});
+            `;
+
+            document.getElementById('arrest-btn').addEventListener('click', () => {
+        
